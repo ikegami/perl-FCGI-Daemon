@@ -67,6 +67,8 @@ OPTIONS
       -u www-data                     # user name to become (if run as root)
       -g www-data                     # group name to become (if run as root)
       -d                              # daemonize (run in background)
+      --manager_proc_name FCGI::Daemon        # name to use for the manager process.
+      --worker_proc_name  FCGI::Daemon-worker # name to use for the worker processes.
 
     All options are optional.
 

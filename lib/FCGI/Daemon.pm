@@ -8,7 +8,7 @@ use 5.008;
 use strict;
 #use warnings;
 #use diagnostics -verbose;
-use Getopt::Std;
+use Getopt::Long qw( GetOptions :config posix_default );
 use autouse 'Pod::Usage'=>qw(pod2usage);
 
 =head1 NAME
@@ -69,24 +69,44 @@ sub help { pod2usage(-verbose=>$ARG[0],-noperldoc=>1) and exit; }
     Modulino-style main routine
 =cut
 sub run {
-    getopts('hde:f:q:p:s:g:u:m:c:l:w:',\%o) or help(0);
-    help(2) if $o{'h'};
+    GetOptions(\%o,
+        'help|h',
+        'daemon|d',
+        'max_evals|e=s',
+        'file_pattern|f=s',
+        'queue|q=s',
+        'pidfile|p=s',
+        'sockfile|s=s',
+        'gid|g=s',
+        'uid|u=s',
+        'rlimit_vmem|m=s',  # In MiB
+        'rlimit_cpu|c=s',
+        'leak_threshold|l=s',
+        'prefork|w=s',
+        'manager_proc_name=s',
+        'worker_proc_name=s',
+    )
+        or help(0);
 
-    $o{sockfile}=$o{'s'}||'/var/run/fcgi-daemon.sock';
-    $o{pidfile}=$o{'p'}||'/var/run/fcgi-daemon.pid' if $o{'d'};
-    $o{prefork}=defined $o{'w'} ? $o{'w'} : 1;
-    $o{queue}=defined $o{'q'} ? $o{'q'} : 96;
-    $o{rlimit_vmem}=($o{'m'}||512)*1024*1024;
-    $o{rlimit_cpu}=$o{'c'}||32;
-    $o{max_evals}=defined $o{'e'} ? $o{'e'} : 10240;   #max evals before exit - paranoid to free memory if leaks
-    $o{file_pattern}=$o{'f'}||qr{\.pl};
-    $o{leak_threshold}=$o{'l'}||1.3;
-    $o{manager_proc_name}='FCGI::Daemon';
-    $o{worker_proc_name}='FCGI::Daemon-worker';
+    help(2) if $o{help};
+
+    delete($o{pidfile}) if !$o{daemon};
+
+    $o{sockfile} ||= '/var/run/fcgi-daemon.sock';
+    $o{pidfile} ||= '/var/run/fcgi-daemon.pid' if $o{daemon};
+    $o{prefork} = 1 if !defined($o{prefork});
+    $o{queue} = 96 if !defined($o{queue});
+    $o{rlimit_vmem} ||= 512;
+    $o{rlimit_cpu} ||= 32;
+    $o{max_evals} = 10240 if !defined($o{max_evals});   #max evals before exit - paranoid to free memory if leaks
+    $o{file_pattern} = $o{file_pattern} ? qr{$o{file_pattern}} : qr{\.pl};
+    $o{leak_threshold} ||= 1.3;
+    $o{manager_proc_name} ||= 'FCGI::Daemon';
+    $o{worker_proc_name} ||= 'FCGI::Daemon-worker';
 
     if($REAL_USER_ID==$EFFECTIVE_USER_ID and $EFFECTIVE_USER_ID==0){        # if run as root
-        $o{gid}=$o{g}||'www-data'; $o{gid_num}=scalar getgrnam($o{gid});
-        $o{uid}=$o{u}||'www-data'; $o{uid_num}=scalar getpwnam($o{uid});
+        $o{gid}||='www-data'; $o{gid_num}=scalar getgrnam($o{gid});
+        $o{uid}||='www-data'; $o{uid_num}=scalar getpwnam($o{uid});
     }
 
 =head2 dieif()
@@ -109,7 +129,7 @@ sub run {
                          };
 
     # daemonize
-    if($o{'d'}){
+    if($o{daemon}){
         chdir '/';                              # this is good practice for unmounting
         $PROGRAM_NAME='FCGI::Daemon';
         defined(my $pid=fork) or die "Can't fork: $!";
@@ -153,7 +173,7 @@ sub run {
     ## set rlimit(s)
     require 'syscall.ph';
     require 'sys/resource.ph';
-    my $rlim=pack 'L!L!',$o{rlimit_vmem},$o{rlimit_vmem};
+    my $rlim=pack 'L!L!',$o{rlimit_vmem}*1024*1024,$o{rlimit_vmem}*1024*1024;
     dieif($OS_ERROR,"Unable to set RLIMIT_AS: ") if -1==syscall(SYS_setrlimit(),RLIMIT_AS(),$rlim);
     $rlim=pack 'L!L!',$o{rlimit_cpu},$o{rlimit_cpu};
     dieif($OS_ERROR,"Unable to set RLIMIT_CPU: ") if -1==syscall(SYS_setrlimit(),RLIMIT_CPU(),$rlim);
@@ -362,6 +382,8 @@ Options: (default arguments given for convenience)
   -u www-data                     # user name to become (if run as root)
   -g www-data                     # group name to become (if run as root)
   -d                              # daemonize (run in background)
+  --manager_proc_name FCGI::Daemon        # name to use for the manager process.
+  --worker_proc_name  FCGI::Daemon-worker # name to use for the worker processes.
 
 All options are optional.
 

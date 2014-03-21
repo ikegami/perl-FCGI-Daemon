@@ -16,7 +16,7 @@ WriteMakefile(
         'FCGI::ProcManager' => 0.18,
         'FCGI' => 0.71,
         'IO::Select' => 0,
-        'Getopt::Std' => 0,
+        'Getopt::Long' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'FCGI-Daemon-*' },
