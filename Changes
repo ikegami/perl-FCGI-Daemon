@@ -1,0 +1,28 @@
+Changelog for FCGI-Daemon
+#########################
+
+2011-11-21 Dmitry Smirnov <onlyjob@cpan.org>  
+
+  * Evaluated scripts no longer pollute error log on exit
+  * Error message for non-executable scripts goes to STDERR and to the STDOUT
+  * Added regex pattern (-f) to match file name and identify perl scripts with
+    any extension (not only .pl as previously) for evaluation so
+    .cgi scripts can be accelerated too, if written in Perl.
+  * Documentation update
+  * Configuration examples for use with nginx
+
+2011-11-21 Dmitry Smirnov <onlyjob@cpan.org>
+
+  * Print error to STDERR if DOable script dies
+
+2011-04-22 Dmitry Smirnov <onlyjob@cpan.org>
+
+ *  Minor POD (documentation) update
+
+2011-04-20 Dmitry Smirnov <onlyjob@cpan.org>
+
+ *  Minor POD (documentation) update
+
+2011-04-19 Dmitry Smirnov <onlyjob@cpan.org>
+
+ *  First version.
