@@ -4,7 +4,7 @@ NAME
 
 VERSION
 
-    Version 0.20111121
+    Version 0.20140325
 
 SYNOPSIS
 
@@ -169,7 +169,7 @@ AUTHOR
 
 LICENSE
 
-    FCGI::Daemon - FastCGI daemon Copyright (C) 2011 Free Software
+    FCGI::Daemon - FastCGI daemon Copyright (C) 2014 Free Software
     Foundation
 
     This program is free software: you can redistribute it and/or modify it

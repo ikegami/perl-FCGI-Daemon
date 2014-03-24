@@ -1,6 +1,10 @@
 Changelog for FCGI-Daemon
 #########################
 
+2014-03-25 Eric Brine <ikegami@cpan.org>  
+
+  * Silence a startup warning.
+
 2011-11-21 Dmitry Smirnov <onlyjob@cpan.org>  
 
   * Evaluated scripts no longer pollute error log on exit

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 package FCGI::Daemon;
-our $VERSION = '0.20111121';
+our $VERSION = '0.20140325';
 use English '-no_match_vars';
 use FCGI 0.71;                          # on Debian available as libfcgi-perl
 use FCGI::ProcManager 0.18;             # on Debian available as libfcgi-procmanager-perl
@@ -17,10 +17,44 @@ FCGI::Daemon - Perl-aware Fast CGI daemon for use with nginx web server.
 
 =head1 VERSION
 
-Version 0.20111121
+Version 0.20140325
 
 =begin comment
 =cut
+
+{
+    package  # Line break to fool CPAN indexer
+        FCGI::Daemon::ProcManager;
+
+    our @ISA = 'FCGI::ProcManager';
+
+    sub new {
+        my ($class, $opts) = @_;
+        my %opts = %$opts;
+
+        my $pm_title        = $opts{pm_title       } || 'perl-fcgi-pm';
+        my $pm_server_title = $opts{pm_server_title} || 'perl-fcgi';
+
+        my $self = $class->SUPER::new(\%opts);
+        $self->{pm_title       } = $pm_title;
+        $self->{pm_server_title} = $pm_server_title;
+
+        return $self;
+    }
+
+    sub managing_init {
+        my ($self) = @_;
+        $self->SUPER::managing_init();
+        $0 = $self->{pm_title};
+    }
+
+    sub handling_init {
+        my ($self) = @_;
+        $self->SUPER::handling_init();
+        $0 = $self->{pm_server_title};
+    }
+}
+
 
 my %o;
 
@@ -47,6 +81,8 @@ sub run {
     $o{max_evals}=defined $o{'e'} ? $o{'e'} : 10240;   #max evals before exit - paranoid to free memory if leaks
     $o{file_pattern}=$o{'f'}||qr{\.pl};
     $o{leak_threshold}=$o{'l'}||1.3;
+    $o{manager_proc_name}='FCGI::Daemon';
+    $o{worker_proc_name}='FCGI::Daemon-worker';
 
     if($REAL_USER_ID==$EFFECTIVE_USER_ID and $EFFECTIVE_USER_ID==0){        # if run as root
         $o{gid}=$o{g}||'www-data'; $o{gid_num}=scalar getgrnam($o{gid});
@@ -78,7 +114,7 @@ sub run {
         $PROGRAM_NAME='FCGI::Daemon';
         defined(my $pid=fork) or die "Can't fork: $!";
         exit if $pid;
-        eval {use POSIX qw(setsid); POSIX::setsid();} or die q{Can't start a new session: }.$OS_ERROR;
+        eval {use POSIX qw(setsid); POSIX::setsid();} or die "Can't start a new session: ".$OS_ERROR;
         open *STDIN,'<','/dev/null';
         open *STDOUT,'>>','/dev/null';
         open *STDERR,'>>','/dev/null';
@@ -86,10 +122,13 @@ sub run {
     }
 
     my %req_env;
-    $o{fcgi_pm}=FCGI::ProcManager->new({n_processes=>$o{prefork},
-                                        die_timeout=>28,
-                                        pid_fname=>$o{pidfile}
-                                      });
+    $o{fcgi_pm}=FCGI::Daemon::ProcManager->new({
+        n_processes     => $o{prefork},
+        die_timeout     => 28,
+        pid_fname       => $o{pidfile},
+        pm_title        => $o{manager_proc_name},
+        pm_server_title => $o{worker_proc_name},
+    });
     print "Opening socket $o{sockfile}\n";
     my $rqst=FCGI::Request(\*STDIN,\*STDOUT,\*STDERR,\%req_env,
              FCGI::OpenSocket($o{sockfile},$o{prefork}*$o{queue}),
@@ -239,15 +278,6 @@ sub run {
         }
         $o{fcgi_pm}->pm_post_dispatch();
     }
-}
-
-# overriding process names
-sub FCGI::ProcManager::pm_change_process_name {
-        my ($self,$name)=@_;
-        my %p=( 'perl-fcgi-pm'  =>'FCGI::Daemon',
-                'perl-fcgi'     =>'FCGI::Daemon-worker',
-        );
-        $0=$p{$name} if $p{$name} ne '';
 }
 
 =head2 get_file_from_path()
@@ -465,7 +495,7 @@ Dmitry Smirnov, C<< <onlyjob at cpan.org> >>
 =head1 LICENSE
 
 FCGI::Daemon - FastCGI daemon
-Copyright (C) 2011 Free Software Foundation
+Copyright (C) 2014 Free Software Foundation
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
