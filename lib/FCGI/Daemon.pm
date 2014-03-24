@@ -85,6 +85,7 @@ sub run {
         'prefork|w=s',
         'manager_proc_name=s',
         'worker_proc_name=s',
+        'startup_script=s',
     )
         or help(0);
 
@@ -158,6 +159,11 @@ sub run {
     if(defined $o{gid_num} and defined $o{uid_num}){                # if run as root
         chown $o{uid_num},$o{gid_num},$o{sockfile}                  # chown SOCKfile
             or dieif($OS_ERROR,'Unable to chown SOCKfile');
+    }
+
+    if ($o{startup_script}) {
+        do($o{startup_script})
+            or die("Can't execute startup script \"$o{startup_script}\": ".( $@ ? $@ : "$!\n" ));
     }
 
     $o{fcgi_pm}->pm_manage();   # from now on we are worker process
@@ -384,6 +390,7 @@ Options: (default arguments given for convenience)
   -d                              # daemonize (run in background)
   --manager_proc_name FCGI::Daemon        # name to use for the manager process.
   --worker_proc_name  FCGI::Daemon-worker # name to use for the worker processes.
+  --startup_script script.pl      # Module loading script to execute before fork. Must eval to true.
 
 All options are optional.
 

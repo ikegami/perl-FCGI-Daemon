@@ -69,6 +69,7 @@ OPTIONS
       -d                              # daemonize (run in background)
       --manager_proc_name FCGI::Daemon        # name to use for the manager process.
       --worker_proc_name  FCGI::Daemon-worker # name to use for the worker processes.
+      --startup_script script.pl      # Module loading script to execute before fork. Must eval to true.
 
     All options are optional.
 

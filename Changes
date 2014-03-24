@@ -3,6 +3,10 @@ Changelog for FCGI-Daemon
 
 2014-03-25 Eric Brine <ikegami@cpan.org>  
 
+  * Add support for module-loading script.
+
+2014-03-25 Eric Brine <ikegami@cpan.org>  
+
   * Add --manager_proc_name and --worker_proc_name.
 
 2014-03-25 Eric Brine <ikegami@cpan.org>  
