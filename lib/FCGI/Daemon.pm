@@ -218,14 +218,17 @@ sub run {
         if($o{max_evals}>0 and $req_env{'SCRIPT_FILENAME'}=~m{$o{file_pattern}\z}){   # detect if perl script
             my %allvars;
             @allvars{keys %main::}=();
-            {
+            FCGI_DAEMON_EXEC_BLOCK: {
                 package main;
-                local *CORE::GLOBAL::exit=sub { die 'notr3a11yeXit' };
+                local *CORE::GLOBAL::exit = sub {
+                    no warnings 'exiting';
+                    last FCGI_DAEMON_EXEC_BLOCK;
+                };
                 local $0=$req_env{SCRIPT_FILENAME};     #fixes FindBin (in English $0 means $PROGRAM_NAME)
                 do $0;
                 if(my $err=$@){
                     $err=~s{\n+\z}{};
-                    print {*STDERR} "$0\n$err\n\b" unless $err =~ m{^notr3a11yeXit};
+                    print {*STDERR} "$0\n$err\n\b";
                 }
             }
 
