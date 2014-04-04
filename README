@@ -70,6 +70,8 @@ OPTIONS
       --manager_proc_name FCGI::Daemon        # name to use for the manager process.
       --worker_proc_name  FCGI::Daemon-worker # name to use for the worker processes.
       --startup_script script.pl      # Module loading script to execute before fork. Must eval to true.
+      --log /var/log/fcgi-daemon.log  # Redirect STDOUT and STDERR here.
+                                       # Default is no redirection, or /dev/null when -d is used.
 
     All options are optional.
 

@@ -86,6 +86,7 @@ sub run {
         'manager_proc_name=s',
         'worker_proc_name=s',
         'startup_script=s',
+        'log=s',
     )
         or help(0);
 
@@ -140,6 +141,13 @@ sub run {
         open *STDOUT,'>>','/dev/null';
         open *STDERR,'>>','/dev/null';
         umask 022;
+    }
+
+    if ($o{log}){
+        open *STDERR,'>>',$o{log} or warn "Can't redirect STDERR: $!\n";
+        select(STDERR); $|=1;
+        open *STDOUT,'>>&',*STDERR or warn "Can't redirect STDOUT: $!\n";
+        select(STDOUT); $|=1;
     }
 
     my %req_env;
@@ -391,6 +399,8 @@ Options: (default arguments given for convenience)
   --manager_proc_name FCGI::Daemon        # name to use for the manager process.
   --worker_proc_name  FCGI::Daemon-worker # name to use for the worker processes.
   --startup_script script.pl      # Module loading script to execute before fork. Must eval to true.
+  --log /var/log/fcgi-daemon.log  # Redirect STDOUT and STDERR here.
+                                   # Default is no redirection, or /dev/null when -d is used.
 
 All options are optional.
 
