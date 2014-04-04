@@ -170,6 +170,7 @@ sub run {
     }
 
     if ($o{startup_script}) {
+        package main;
         do($o{startup_script})
             or die("Can't execute startup script \"$o{startup_script}\": ".( $@ ? $@ : "$!\n" ));
     }
@@ -218,12 +219,13 @@ sub run {
             my %allvars;
             @allvars{keys %main::}=();
             {
+                package main;
                 local *CORE::GLOBAL::exit=sub { die 'notr3a11yeXit' };
                 local $0=$req_env{SCRIPT_FILENAME};     #fixes FindBin (in English $0 means $PROGRAM_NAME)
                 do $0;
-                if($EVAL_ERROR){
-                    $EVAL_ERROR=~s{\n+\z}{};
-                    print {*STDERR} "$0\n$EVAL_ERROR\n\b" unless $EVAL_ERROR =~ m{^notr3a11yeXit};
+                if(my $err=$@){
+                    $err=~s{\n+\z}{};
+                    print {*STDERR} "$0\n$err\n\b" unless $err =~ m{^notr3a11yeXit};
                 }
             }
 
