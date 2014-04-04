@@ -203,7 +203,7 @@ sub run {
         $req_env{'SCRIPT_NAME'}=~s/$req_env{'DOCUMENT_ROOT'}//;
 
         # check if script (exacutable, readable, non-zero size)
-        unless(-x -s -r $req_env{'SCRIPT_FILENAME'}){
+        unless(-r $req_env{'SCRIPT_FILENAME'} && -s _ && -x _){
             print "Content-type: text/plain\r\n\r\n";
             $_="Error: No such CGI app - $req_env{SCRIPT_FILENAME} may not exist or is not executable by this process.\n";
             print $_;
