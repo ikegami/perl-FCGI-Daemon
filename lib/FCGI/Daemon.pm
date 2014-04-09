@@ -247,6 +247,8 @@ sub run {
                 delete $main::{$_};
             }
 
+            CGI::_reset_globals() if $INC{"CGI.pm"};
+
             if(open my $STAT,'<',"/proc/$$/status"){
                 my %stat;
                 while(my ($k,$v)=split /\:\s+/,<$STAT>){
