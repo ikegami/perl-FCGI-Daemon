@@ -216,10 +216,8 @@ sub run {
 
         # Fast Perl-CGI processing
         if($o{max_evals}>0 and $req_env{'SCRIPT_FILENAME'}=~m{$o{file_pattern}\z}){   # detect if perl script
-            my %allvars;
-            @allvars{keys %main::}=();
             FCGI_DAEMON_EXEC_BLOCK: {
-                package main;
+                package FCGI::Daemon::root;
                 local *CORE::GLOBAL::exit = sub {
                     no warnings 'exiting';
                     last FCGI_DAEMON_EXEC_BLOCK;
@@ -240,12 +238,11 @@ sub run {
 			#can be used to close DB connections etc.
 			#$_{$0}->{'SIGTERM'}=sub { print "I closed my handles"; };
 
-            foreach(keys %main::){                      # cleanup garbage after do()
-                next if exists $allvars{$_};
+            foreach(keys %FCGI::Daemon::root::){        # cleanup garbage after do()
                 next if m{::$};
-                next if m{^_};
-                delete $main::{$_};
+                delete $FCGI::Daemon::root::{$_};
             }
+            delete $FCGI::Daemon::{'root::'};
 
             CGI::_reset_globals() if $INC{"CGI.pm"};
 
