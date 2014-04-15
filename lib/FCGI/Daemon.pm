@@ -123,13 +123,6 @@ sub run {
         $o{uid}||='www-data'; $o{uid_num}=scalar getpwnam($o{uid});
     }
 
-    $SIG{INT}=$SIG{TERM}=sub{   # actually FCGI::ProcManager override our TERM handler so .sock and .pid files will be removed only by sysv script... :(
-                            $o{fcgi_pm}->pm_remove_pid_file() if $o{fcgi_pm};
-                            unlink @o{'sockfile','pidfile'};
-                            $o{fcgi_pm}->pm_die() if $o{fcgi_pm};   #pm_die() does not return
-                            exit 0;
-                         };
-
     # daemonize
     if($o{daemon}){
         chdir '/';                              # this is good practice for unmounting
@@ -150,6 +143,20 @@ sub run {
         select(STDOUT); $|=1;
     }
 
+    if ($o{startup_script}) {
+        package main;
+        local @ARGV = \%o;
+        do($o{startup_script})
+            or die("Can't execute startup script \"$o{startup_script}\": ".( $@ ? $@ : "$!\n" ));
+    }
+
+    $SIG{INT}=$SIG{TERM}=sub{   # actually FCGI::ProcManager override our TERM handler so .sock and .pid files will be removed only by sysv script... :(
+                            $o{fcgi_pm}->pm_remove_pid_file() if $o{fcgi_pm};
+                            unlink @o{'sockfile','pidfile'};
+                            $o{fcgi_pm}->pm_die() if $o{fcgi_pm};   #pm_die() does not return
+                            exit 0;
+                         };
+
     my %req_env;
     $o{fcgi_pm}=FCGI::Daemon::ProcManager->new({
         n_processes     => $o{prefork},
@@ -167,12 +174,6 @@ sub run {
     if(defined $o{gid_num} and defined $o{uid_num}){                # if run as root
         chown $o{uid_num},$o{gid_num},$o{sockfile}                  # chown SOCKfile
             or dieif($OS_ERROR,'Unable to chown SOCKfile');
-    }
-
-    if ($o{startup_script}) {
-        package main;
-        do($o{startup_script})
-            or die("Can't execute startup script \"$o{startup_script}\": ".( $@ ? $@ : "$!\n" ));
     }
 
     $o{fcgi_pm}->pm_manage();   # from now on we are worker process
