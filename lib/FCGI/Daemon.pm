@@ -117,6 +117,11 @@ sub run {
     $o{leak_threshold} ||= 1.3;
     $o{manager_proc_name} ||= 'FCGI::Daemon';
     $o{worker_proc_name} ||= 'FCGI::Daemon-worker';
+    $o{exception_handler} = sub {
+        my ($err) = @_;
+        $err=~s{\n+\z}{};
+        print {*STDERR} "$0\n$err\n\b";
+    };
 
     if($REAL_USER_ID==$EFFECTIVE_USER_ID and $EFFECTIVE_USER_ID==0){        # if run as root
         $o{gid}||='www-data'; $o{gid_num}=scalar getgrnam($o{gid});
@@ -225,10 +230,7 @@ sub run {
                 };
                 local $0=$req_env{SCRIPT_FILENAME};     #fixes FindBin (in English $0 means $PROGRAM_NAME)
                 do $0;
-                if(my $err=$@){
-                    $err=~s{\n+\z}{};
-                    print {*STDERR} "$0\n$err\n\b";
-                }
+                $o{exception_handler}->($@) if $@;
             }
 
             #untested experimental callback to execute on script exit
