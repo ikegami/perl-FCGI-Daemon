@@ -65,6 +65,18 @@ __PACKAGE__->run() unless caller();     # modulino i.e. executable rather than m
 =cut
 sub help { pod2usage(-verbose=>$ARG[0],-noperldoc=>1) and exit; }
 
+=head2 dieif()
+    exit handler
+=cut
+    sub dieif {
+        if($ARG[0]){
+            my $err=$ARG[1];
+            unlink @o{'pidfile','sockfile'};
+            print "Error - $err:\n",$ARG[0],"\n";
+            exit 1;
+        }
+    }
+
 =head2 run()
     Modulino-style main routine
 =cut
@@ -109,18 +121,6 @@ sub run {
     if($REAL_USER_ID==$EFFECTIVE_USER_ID and $EFFECTIVE_USER_ID==0){        # if run as root
         $o{gid}||='www-data'; $o{gid_num}=scalar getgrnam($o{gid});
         $o{uid}||='www-data'; $o{uid_num}=scalar getpwnam($o{uid});
-    }
-
-=head2 dieif()
-    exit handler
-=cut
-    sub dieif {
-        if($ARG[0]){
-            my $err=$ARG[1];
-            unlink @o{'pidfile','sockfile'};
-            print "Error - $err:\n",$ARG[0],"\n";
-            exit 1;
-        }
     }
 
     $SIG{INT}=$SIG{TERM}=sub{   # actually FCGI::ProcManager override our TERM handler so .sock and .pid files will be removed only by sysv script... :(
