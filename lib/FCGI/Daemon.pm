@@ -171,7 +171,7 @@ sub run {
         pm_server_title => $o{worker_proc_name},
     });
     print "Opening socket $o{sockfile}\n";
-    my $rqst=FCGI::Request(\*STDIN,\*STDOUT,\*STDERR,\%req_env,
+    my $rqst=FCGI::Request(\*STDIN,\*STDOUT,$o{log}?\*DUMMY_STDERR:\*STDERR,\%req_env,
              FCGI::OpenSocket($o{sockfile},$o{prefork}*$o{queue}),
              FCGI::FAIL_ACCEPT_ON_INTR())
         or die "Error: Unable to create FCGI::Request...";
