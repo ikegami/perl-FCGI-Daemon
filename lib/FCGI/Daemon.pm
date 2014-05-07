@@ -150,6 +150,7 @@ sub run {
 
     if ($o{startup_script}) {
         package main;
+        local $0 = $o{startup_script};
         local @ARGV = \%o;
         do($o{startup_script})
             or die("Can't execute startup script \"$o{startup_script}\": ".( $@ ? $@ : "$!\n" ));
