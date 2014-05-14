@@ -54,8 +54,8 @@ OPTIONS
       -h                              # brief help message
       -w 1                            # number of preforked processes (workers)
       -q 96                           # max queue
-      -m 512                          # RLIMIT_AS in MiB (see setrlimit)
-      -c 32                           # RLIMIT_CPU in seconds (see setrlimit)
+      -m 512                          # RLIMIT_AS in MiB (see setrlimit). 0 avoids setting a limit.
+      -c 32                           # RLIMIT_CPU in seconds (see setrlimit). 0 avoids setting a limit.
       -e 10240                        # max evals before process restart. 0 disables DOing perl scripts.
       -f \.pl                         # regex to match script file name
                                        # script will be evaluated on match (if -e parameter allows)

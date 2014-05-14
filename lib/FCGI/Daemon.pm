@@ -110,8 +110,8 @@ sub run {
     $o{pidfile} ||= '/var/run/fcgi-daemon.pid' if $o{daemon};
     $o{prefork} = 1 if !defined($o{prefork});
     $o{queue} = 96 if !defined($o{queue});
-    $o{rlimit_vmem} ||= 512;
-    $o{rlimit_cpu} ||= 32;
+    $o{rlimit_vmem} = 512 if !defined($o{rlimit_vmem});
+    $o{rlimit_cpu} = 32 if !defined($o{rlimit_cpu});
     $o{max_evals} = 10240 if !defined($o{max_evals});   #max evals before exit - paranoid to free memory if leaks
     $o{file_pattern} = $o{file_pattern} ? qr{$o{file_pattern}} : qr{\.pl};
     $o{leak_threshold} ||= 1.3;
@@ -192,13 +192,21 @@ sub run {
             dieif($OS_ERROR,'Unable to change user_id to '.$o{uid});
     }
 
-    ## set rlimit(s)
-    require 'syscall.ph';
-    require 'sys/resource.ph';
-    my $rlim=pack 'L!L!',$o{rlimit_vmem}*1024*1024,$o{rlimit_vmem}*1024*1024;
-    dieif($OS_ERROR,"Unable to set RLIMIT_AS: ") if -1==syscall(SYS_setrlimit(),RLIMIT_AS(),$rlim);
-    $rlim=pack 'L!L!',$o{rlimit_cpu},$o{rlimit_cpu};
-    dieif($OS_ERROR,"Unable to set RLIMIT_CPU: ") if -1==syscall(SYS_setrlimit(),RLIMIT_CPU(),$rlim);
+    if ($o{rlimit_vmem} || $o{rlimit_cpu}) {
+        ## set rlimit(s)
+        require 'syscall.ph';
+        require 'sys/resource.ph';
+
+        if ($o{rlimit_vmem}) {
+            my $rlim=pack 'L!L!',$o{rlimit_vmem}*1024*1024,$o{rlimit_vmem}*1024*1024;
+            dieif($OS_ERROR,"Unable to set RLIMIT_AS: ") if -1==syscall(SYS_setrlimit(),RLIMIT_AS(),$rlim);
+        }
+
+        if ($o{rlimit_cpu}) {
+            my $rlim=pack 'L!L!',$o{rlimit_cpu},$o{rlimit_cpu};
+            dieif($OS_ERROR,"Unable to set RLIMIT_CPU: ") if -1==syscall(SYS_setrlimit(),RLIMIT_CPU(),$rlim);
+        }
+    }
 
     REQ_LOOP:   # main loop
     while($rqst->Accept()>=0){
@@ -390,8 +398,8 @@ Options: (default arguments given for convenience)
   -h                              # brief help message
   -w 1                            # number of preforked processes (workers)
   -q 96                           # max queue
-  -m 512                          # RLIMIT_AS in MiB (see setrlimit)
-  -c 32                           # RLIMIT_CPU in seconds (see setrlimit)
+  -m 512                          # RLIMIT_AS in MiB (see setrlimit). 0 avoids setting a limit.
+  -c 32                           # RLIMIT_CPU in seconds (see setrlimit). 0 avoids setting a limit.
   -e 10240                        # max evals before process restart. 0 disables DOing perl scripts.
   -f \.pl                         # regex to match script file name
                                    # script will be evaluated on match (if -e parameter allows)
