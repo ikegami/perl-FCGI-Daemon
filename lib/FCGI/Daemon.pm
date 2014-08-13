@@ -239,7 +239,11 @@ sub run {
                 };
                 local $0=$req_env{SCRIPT_FILENAME};     #fixes FindBin (in English $0 means $PROGRAM_NAME)
                 do $0;
-                $o{exception_handler}->($@) if $@;
+                if ($@) {
+                    my $panic = substr($@, 0, 6) eq "panic:";
+                    $o{exception_handler}->($@);
+                    CORE::exit if $panic;
+                }
             }
 
             #untested experimental callback to execute on script exit
